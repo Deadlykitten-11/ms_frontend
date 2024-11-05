@@ -39,7 +39,7 @@ class SignupScreenState extends State<SignupScreen> {
     String email,
   ) async {
     const String url =
-        "http://localhost:3000/signup"; // Replace with your backend endpoint
+        "http://localhost:3000/api/auth/signup"; // Replace with your backend endpoint
 
     try {
       final response = await http.post(
@@ -64,7 +64,7 @@ class SignupScreenState extends State<SignupScreen> {
         // Handle failure
         final responseData = jsonDecode(response.body);
         String errorMessage = 'Failed to sign up';
-        
+
         if (responseData['errors'] != null) {
           List<dynamic> errors = responseData['errors'];
           errorMessage = errors.map((e) => e['msg']).join('\n');
