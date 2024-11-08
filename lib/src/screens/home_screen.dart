@@ -156,13 +156,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   onPressed: () async {
                     // Attempt to update the user role
                     bool success =
-                        await _updateUserRole(user['id'], selectedRole);
+                        await _updateUserRole(user['username'], selectedRole);
                     if (mounted) {
                       if (success) {
-                        Navigator.of(context).pop();
-                        _fetchPersonalDetails(); // Refresh the user details to reflect the updated role
+                        if (Navigator.canPop(context)) {
+                          Navigator.of(context).pop(); // Close the dialog box
+                        }
+                        _fetchPersonalDetails(); // Refresh user data after updating the role
                       } else {
-                        // Show error dialog if the update fails
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text('Failed to update user role'),
@@ -181,17 +182,25 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Future<bool> _updateUserRole(String userId, String newRole) async {
+  Future<bool> _updateUserRole(String username, String newRole) async {
     try {
+      print(
+          'Starting user role update for username: $username with role: $newRole');
+
+      // Update the request to use username instead of id
       final response = await http.put(
-        Uri.parse('http://localhost:3000/api/auth/users/$userId'),
+        Uri.parse(
+            'http://localhost:3000/api/auth/users/$username'), // Use the username in the URL
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'role': newRole}),
       );
+
       if (response.statusCode == 200) {
+        print('User role successfully updated');
         return true;
       } else {
         print('Failed to update user role: ${response.statusCode}');
+        print('Response body: ${response.body}');
         return false;
       }
     } catch (e) {
