@@ -90,6 +90,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 ListTile(
                   title: Text('Name: ${user['username']}'),
                   subtitle: Text('Position: ${user['role']}'),
+                  trailing: ElevatedButton(
+                    onPressed: () {
+                      _showEditRoleDialog(context, user);
+                    },
+                    child: Text('Edit'),
+                  ),
                 ),
             ],
           );
@@ -103,6 +109,94 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _selectedContent = Text('Error: ${e.toString()}');
       });
+    }
+  }
+
+  void _showEditRoleDialog(BuildContext context, dynamic user) {
+    String selectedRole = user['role'];
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return AlertDialog(
+              title: Text('Edit Role for ${user['username']}'),
+              content: DropdownButton<String>(
+                value: selectedRole,
+                onChanged: (String? newValue) {
+                  setState(() {
+                    selectedRole = newValue!;
+                  });
+                },
+                items: <String>[
+                  'admin',
+                  'finance-1',
+                  'finance-2',
+                  'HR-1',
+                  'HR-2',
+                  'engi-1',
+                  'engi-2',
+                  'new-user'
+                ].map<DropdownMenuItem<String>>((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value),
+                  );
+                }).toList(),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    // Attempt to update the user role
+                    bool success =
+                        await _updateUserRole(user['id'], selectedRole);
+                    if (mounted) {
+                      if (success) {
+                        Navigator.of(context).pop();
+                        _fetchPersonalDetails(); // Refresh the user details to reflect the updated role
+                      } else {
+                        // Show error dialog if the update fails
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Failed to update user role'),
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  child: Text('Save'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<bool> _updateUserRole(String userId, String newRole) async {
+    try {
+      final response = await http.put(
+        Uri.parse('http://localhost:3000/api/auth/users/$userId'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'role': newRole}),
+      );
+      if (response.statusCode == 200) {
+        return true;
+      } else {
+        print('Failed to update user role: ${response.statusCode}');
+        return false;
+      }
+    } catch (e) {
+      print('Error updating user role: $e');
+      return false;
     }
   }
 
