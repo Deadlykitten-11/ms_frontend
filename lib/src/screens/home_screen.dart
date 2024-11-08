@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -6,7 +8,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  String _selectedContent = 'Welcome to the Dashboard!';
+  Widget? _selectedContent = Text('Welcome to the Dashboard!');
   bool _showSecondSidebar = false;
   List<Widget> _secondSidebarItems = [];
   List<Widget> _persistentProjects = [];
@@ -54,7 +56,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _updateContent(String content, List<Widget> secondSidebarItems) {
+  void _updateContent(Widget content, List<Widget> secondSidebarItems) {
     setState(() {
       _selectedContent = content;
       _secondSidebarItems = secondSidebarItems;
@@ -66,6 +68,42 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _showSecondSidebar = false;
     });
+  }
+
+// Access to the backend server to catch the information
+  Future<void> _fetchPersonalDetails() async {
+    try {
+      final response = await http.get(Uri.parse(
+          'http://localhost:3000/api/auth/users')); // Modified the URL to match the new endpoint
+      if (response.statusCode == 200) {
+        List<dynamic> data = jsonDecode(response.body);
+        setState(() {
+          _selectedContent = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '用户信息:',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 10),
+              for (var user in data)
+                ListTile(
+                  title: Text('Name: ${user['username']}'),
+                  subtitle: Text('Position: ${user['role']}'),
+                ),
+            ],
+          );
+        });
+      } else {
+        setState(() {
+          _selectedContent = Text('Failed to load user information');
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _selectedContent = Text('Error: ${e.toString()}');
+      });
+    }
   }
 
   void _createProject(BuildContext context) {
@@ -120,7 +158,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     ..._persistentProjects,
                   ];
-                  _updateContent('项目内容', _secondSidebarItems);
+                  _updateContent(Text('项目内容'), _secondSidebarItems);
                 });
                 Navigator.of(context).pop();
               },
@@ -174,7 +212,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   leading: Icon(Icons.terminal),
                   title: Text('项目概览'),
                   onTap: () {
-                    _updateContent('项目内容', [
+                    _updateContent(Text('项目内容'), [
                       ListTile(
                         leading: Icon(Icons.create_new_folder),
                         title: Text('创建项目'),
@@ -190,7 +228,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   leading: Icon(Icons.science),
                   title: Text('材料管理'),
                   onTap: () {
-                    _updateContent('材料管理内容', [
+                    _updateContent(Text('材料管理内容'), [
                       ListTile(
                         leading: Icon(Icons.shopping_cart),
                         title: Text('采购'),
@@ -228,7 +266,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   leading: Icon(Icons.compress),
                   title: Text('施工管理'),
                   onTap: () {
-                    _updateContent('施工管理内容', [
+                    _updateContent(Text('施工管理内容'), [
                       ListTile(
                         leading: Icon(Icons.timeline),
                         title: Text('施工进度'),
@@ -251,7 +289,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   leading: Icon(Icons.money),
                   title: Text('财务管理'),
                   onTap: () {
-                    _updateContent('财务管理内容', [
+                    _updateContent(Text('财务管理内容'), [
                       ListTile(
                         leading: Icon(Icons.attach_money),
                         title: Text('预算'),
@@ -272,23 +310,34 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 ListTile(
                   leading: Icon(Icons.build),
-                  title: Text('Components'),
+                  title: Text('用户信息及权限'),
                   onTap: () {
-                    _updateContent('Components Content', []);
+                    _updateContent(Text('Components Content'), [
+                      ListTile(
+                        leading: Icon(Icons.attach_money),
+                        title: Text('用户信息'),
+                        onTap: _fetchPersonalDetails,
+                      ),
+                      ListTile(
+                        leading: Icon(Icons.receipt),
+                        title: Text('权限管理'),
+                        onTap: () {},
+                      ),
+                    ]);
                   },
                 ),
                 ListTile(
                   leading: Icon(Icons.build),
                   title: Text('Components2'),
                   onTap: () {
-                    _updateContent('Components2 Content', []);
+                    _updateContent(Text('Components2 Content'), []);
                   },
                 ),
                 ListTile(
                   leading: Icon(Icons.settings),
                   title: Text('设置'),
                   onTap: () {
-                    _updateContent('设置内容', []);
+                    _updateContent(Text('设置内容'), []);
                   },
                 ),
               ],
@@ -308,14 +357,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           Expanded(
             child: Center(
-              child: Text(
-                _selectedContent,
-                style: TextStyle(
-                  fontSize: 24,
-                  color: Colors.deepPurple,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              child: _selectedContent ?? Text('No content available'),
             ),
           ),
         ],
