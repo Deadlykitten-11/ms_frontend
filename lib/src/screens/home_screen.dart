@@ -1,3 +1,4 @@
+// File: lib/src/screens/homescreen.dart
 import 'package:flutter/material.dart';
 import '../components/account_dialog.dart';
 import '../components/edit_role_dialog.dart';
@@ -16,6 +17,20 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Widget> _secondSidebarItems = [];
   List<Widget> _persistentProjects = [];
   final UserService _userService = UserService();
+  String? _userRole;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserRole();
+  }
+
+  Future<void> _loadUserRole() async {
+    String? role = await _userService.fetchUserRole();
+    setState(() {
+      _userRole = role ?? 'guest'; // Fallback to 'guest' if fetching fails
+    });
+  }
 
   // Introduce the account information on the top right side
   void _showAccountList(BuildContext context) {
@@ -40,10 +55,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _fetchPersonalDetails() async {
-    final userService = UserService();
-
     try {
-      List<dynamic>? data = await userService.fetchPersonalDetails();
+      List<dynamic>? data = await _userService.fetchPersonalDetails();
 
       if (data != null) {
         setState(() {
@@ -166,6 +179,7 @@ class _HomeScreenState extends State<HomeScreen> {
             updateContent: _updateContent,
             createProject: () => _createProject(context),
             fetchPersonalDetails: _fetchPersonalDetails,
+            userRole: _userRole,
           ),
           if (_showSecondSidebar)
             MouseRegion(
@@ -188,10 +202,4 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-}
-
-void main() {
-  runApp(MaterialApp(
-    home: HomeScreen(),
-  ));
 }

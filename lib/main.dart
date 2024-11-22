@@ -1,3 +1,4 @@
+// main.dart
 import 'package:flutter/material.dart';
 import 'src/screens/login_screen.dart'; // Replace with the correct path
 import 'src/screens/signup_screen.dart'; // Replace with the correct path

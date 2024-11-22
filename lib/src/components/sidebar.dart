@@ -4,11 +4,13 @@ class Sidebar extends StatelessWidget {
   final Function(Widget, List<Widget>) updateContent;
   final VoidCallback createProject;
   final Future<void> Function() fetchPersonalDetails;
+  final String? userRole;
 
   Sidebar({
     required this.updateContent,
     required this.createProject,
     required this.fetchPersonalDetails,
+    required this.userRole,
   });
 
   @override
@@ -116,24 +118,25 @@ class Sidebar extends StatelessWidget {
               ]);
             },
           ),
-          ListTile(
-            leading: Icon(Icons.build),
-            title: Text('用户信息及权限'),
-            onTap: () {
-              updateContent(Text('Components Content'), [
-                ListTile(
-                  leading: Icon(Icons.attach_money),
-                  title: Text('用户信息'),
-                  onTap: fetchPersonalDetails,
-                ),
-                ListTile(
-                  leading: Icon(Icons.receipt),
-                  title: Text('权限管理'),
-                  onTap: () {},
-                ),
-              ]);
-            },
-          ),
+          if (userRole == 'admin' || userRole == 'HR-1')
+            ListTile(
+              leading: Icon(Icons.build),
+              title: Text('用户信息及权限'),
+              onTap: () {
+                updateContent(Text('Components Content'), [
+                  ListTile(
+                    leading: Icon(Icons.attach_money),
+                    title: Text('用户信息'),
+                    onTap: fetchPersonalDetails,
+                  ),
+                  ListTile(
+                    leading: Icon(Icons.receipt),
+                    title: Text('权限管理'),
+                    onTap: () {},
+                  ),
+                ]);
+              },
+            ),
           ListTile(
             leading: Icon(Icons.settings),
             title: Text('设置'),

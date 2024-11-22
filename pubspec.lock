@@ -9,6 +9,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.11.0"
+  auth_header:
+    dependency: transitive
+    description:
+      name: auth_header
+      sha256: "0a3938128b6124530de93ce1a20ccb58639195fe7952f638248ea1bc0e5408eb"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.1"
   boolean_selector:
     dependency: transitive
     description:
@@ -41,6 +49,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.18.0"
+  crypto:
+    dependency: transitive
+    description:
+      name: crypto
+      sha256: "1e445881f28f22d6140f181e07737b22f1e099a5e1ff94b0af2f9e4a463f4855"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.6"
   english_words:
     dependency: "direct main"
     description:
@@ -91,6 +107,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.0.2"
+  jaguar_jwt:
+    dependency: "direct main"
+    description:
+      name: jaguar_jwt
+      sha256: c3ab24be5ba5f736f93eacfc94c4381bd93551a351ab5687e70c8d71a9916e8d
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.0"
   leak_tracker:
     dependency: transitive
     description:
