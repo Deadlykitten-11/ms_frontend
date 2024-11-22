@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
+import 'package:cookie_jar/cookie_jar.dart';
+import 'package:dio_cookie_manager/dio_cookie_manager.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:convert';
+import 'dart:io' as io;
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -12,29 +16,64 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController passwordController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
+  Dio? _dio;
+  CookieJar? _cookieJar;
+  final storage = FlutterSecureStorage();
+
+  @override
+  void initState() {
+    super.initState();
+    _initDio();
+  }
+
+  Future<void> _initDio() async {
+    if (_dio != null && _cookieJar != null) {
+      return;
+    }
+    _dio = Dio();
+
+    // Use PersistCookieJar for non-web environments
+    if (io.Platform.isAndroid || io.Platform.isIOS || io.Platform.isLinux || io.Platform.isMacOS || io.Platform.isWindows) {
+      _cookieJar = PersistCookieJar();
+    } else {
+      // Use in-memory CookieJar for web or other unsupported platforms
+      _cookieJar = CookieJar();
+    }
+
+    _dio!.interceptors.add(CookieManager(_cookieJar!));
+    print('Dio initialized with CookieManager for LoginScreen');
+  }
+
   Future<void> _login() async {
     const String url = "http://localhost:3000/api/auth/login";
 
     try {
-      final response = await http.post(
-        Uri.parse(url),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
+      print('Logging in with username: ${usernameController.text}');
+      final response = await _dio!.post(
+        url,
+        data: jsonEncode({
           "username": usernameController.text,
           "password": passwordController.text,
         }),
+        options: Options(headers: {'Content-Type': 'application/json'}),
       );
 
+      print('Login response: ${response.statusCode}');
       if (response.statusCode == 200) {
+        // Save JWT token to secure storage for later use
+        String token = response.data['token'];
+        await storage.write(key: 'jwt_token', value: token);
+
         Navigator.pushReplacementNamed(context, '/home');
       } else {
-        final responseData = jsonDecode(response.body);
+        final responseData = response.data;
         String errorMessage = responseData['message'] ?? 'Login failed';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(errorMessage)),
         );
       }
     } catch (e) {
+      print('Error during login: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: $e')),
       );

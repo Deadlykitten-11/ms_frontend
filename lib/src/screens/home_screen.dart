@@ -1,10 +1,15 @@
 // File: lib/src/screens/homescreen.dart
 import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
+import 'package:cookie_jar/cookie_jar.dart';
+import 'package:dio_cookie_manager/dio_cookie_manager.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../components/account_dialog.dart';
 import '../components/edit_role_dialog.dart';
 import '../components/create_project_dialog.dart';
 import '../components/sidebar.dart';
 import '../services/user_service.dart';
+import 'dart:convert';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -18,21 +23,53 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Widget> _persistentProjects = [];
   final UserService _userService = UserService();
   String? _userRole;
+  Dio? _dio;
+  CookieJar? _cookieJar;
+  final storage = FlutterSecureStorage();
 
   @override
   void initState() {
     super.initState();
+    _initDio();
     _loadUserRole();
   }
 
-  Future<void> _loadUserRole() async {
-    String? role = await _userService.fetchUserRole();
-    setState(() {
-      _userRole = role ?? 'guest'; // Fallback to 'guest' if fetching fails
-    });
+  Future<void> _initDio() async {
+    if (_dio != null && _cookieJar != null) {
+      return;
+    }
+    _dio = Dio();
+    _cookieJar = CookieJar();
+    _dio!.interceptors.add(CookieManager(_cookieJar!));
+    print('Dio initialized with CookieManager for HomeScreen');
   }
 
-  // Introduce the account information on the top right side
+  Future<void> _loadUserRole() async {
+    try {
+      print('Fetching user role');
+      final response = await _dio!.get(
+        'http://localhost:3000/api/auth/userinfo',
+        options: Options(headers: {'Content-Type': 'application/json'}),
+      );
+      print('User role response: ${response.statusCode}');
+      if (response.statusCode == 200) {
+        setState(() {
+          _userRole = response.data['role'] ?? 'guest';
+        });
+      } else {
+        print('Failed to fetch user role: ${response.statusCode}');
+        setState(() {
+          _userRole = 'guest';
+        });
+      }
+    } catch (e) {
+      print('Error fetching user role: $e');
+      setState(() {
+        _userRole = 'guest';
+      });
+    }
+  }
+
   void _showAccountList(BuildContext context) {
     showDialog(
       context: context,
@@ -56,9 +93,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _fetchPersonalDetails() async {
     try {
-      List<dynamic>? data = await _userService.fetchPersonalDetails();
+      print('Fetching personal details');
+      final response = await _dio!.get(
+        'http://localhost:3000/api/auth/users',
+        options: Options(headers: {'Content-Type': 'application/json'}),
+      );
+      print('Fetch personal details response: ${response.statusCode}');
 
-      if (data != null) {
+      if (response.statusCode == 200) {
+        List<dynamic> data = response.data;
         setState(() {
           _selectedContent = Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -88,8 +131,9 @@ class _HomeScreenState extends State<HomeScreen> {
         });
       }
     } catch (e) {
+      print('Error fetching personal details: $e');
       setState(() {
-        _selectedContent = Text('Error: ${e.toString()}');
+        _selectedContent = Text('Error: $e');
       });
     }
   }
@@ -101,10 +145,21 @@ class _HomeScreenState extends State<HomeScreen> {
         return EditRoleDialog(
           user: user,
           onSave: (newRole) async {
-            bool success =
-                await _userService.updateUserRole(user['username'], newRole);
-            if (success) {
-              _fetchPersonalDetails();
+            try {
+              print('Updating role for user: ${user['username']} to $newRole');
+              final response = await _dio!.put(
+                'http://localhost:3000/api/auth/users/${user['username']}',
+                data: jsonEncode({'role': newRole}),
+                options: Options(headers: {'Content-Type': 'application/json'}),
+              );
+              print('Update role response: ${response.statusCode}');
+              if (response.statusCode == 200) {
+                _fetchPersonalDetails();
+              } else {
+                print('Failed to update user role: ${response.statusCode}');
+              }
+            } catch (e) {
+              print('Error updating user role: $e');
             }
           },
         );
